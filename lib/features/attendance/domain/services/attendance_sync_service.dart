@@ -66,8 +66,7 @@ class AttendanceSyncService {
           rejected++;
           break;
         } else {
-          // Network error, timeout, or server error.
-          // Keep this event pending and retry later.
+      
           await localDataSource.updateEventStatus(
             eventId: event.eventId,
             status: SyncStatus.pending,
@@ -77,7 +76,6 @@ class AttendanceSyncService {
           break;
         }
       } catch (e) {
-        // Unexpected errors should not mark an event as synced.
         await localDataSource.updateEventStatus(
           eventId: event.eventId,
           status: SyncStatus.pending,

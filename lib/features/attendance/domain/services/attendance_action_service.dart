@@ -23,10 +23,8 @@ class AttendanceActionService {
   }) async {
     final office = employee.office;
 
-    // Get current GPS position.
     final position = await locationService.getCurrentLocation();
 
-    // Validate office radius.
     final distance = locationService.calculateDistance(
       currentLatitude: position.latitude,
       currentLongitude: position.longitude,
@@ -42,13 +40,11 @@ class AttendanceActionService {
       );
     }
 
-    // Use the configured company timezone.
     final companyLocation = tz.getLocation(office.timezone);
     final companyNow = tz.TZDateTime.now(companyLocation);
 
     final events = await localDataSource.getAllEvents();
 
-    // Only consider events for this employee and company date.
     final todayEvents = events.where((event) {
       if (event.employeeId != employee.id ||
           event.syncStatus == SyncStatus.rejected) {
@@ -93,7 +89,6 @@ class AttendanceActionService {
       longitude: position.longitude,
     );
 
-    // Save locally first. Never depend on the network here.
     await localDataSource.saveEvent(event);
 
     return event;

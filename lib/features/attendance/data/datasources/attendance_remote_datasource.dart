@@ -11,11 +11,9 @@ class AttendanceRemoteDataSource {
     final response = await dio.post(
       '/attendance/events',
       data: {
-        // The Node.js API expects "id", not "eventId".
         'id': event.eventId,
         'employeeId': event.employeeId,
 
-        // Convert Dart enum values to the API contract.
         'eventType': event.eventType == AttendanceEventType.checkIn
             ? 'check_in'
             : 'check_out',
