@@ -13,6 +13,8 @@ import '../../../leave/domain/repositories/leave_repository.dart';
 import '../../../leave/domain/services/leave_validation_service.dart';
 import '../../../leave/presentation/pages/leave_page.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
@@ -45,21 +47,63 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+
+  StreamSubscription<List<ConnectivityResult>>?
+    _connectivitySubscription;
+
+bool isOffline = false;
   int? leaveBalance;
   bool isLeaveBalanceLoading = true;
   String? leaveBalanceError;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<DashboardBloc>().add(const DashboardLoadRequested());
-      }
-    });
+  _checkInitialConnectivity();
+
+  _connectivitySubscription =
+      Connectivity().onConnectivityChanged.listen((results) {
+    _updateConnectivity(results);
+  });
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) {
+      context.read<DashboardBloc>().add(
+        const DashboardLoadRequested(),
+      );
+    }
+  });
+}
+
+Future<void> _checkInitialConnectivity() async {
+  final results = await Connectivity().checkConnectivity();
+
+  if (!mounted) return;
+
+  _updateConnectivity(results);
+}
+
+void _updateConnectivity(List<ConnectivityResult> results) {
+  final connected = results.any(
+    (result) => result != ConnectivityResult.none,
+  );
+
+  if (!mounted) return;
+
+  final wasOffline = isOffline;
+
+  setState(() {
+    isOffline = !connected;
+  });
+
+  // Refresh the dashboard only when network connectivity returns.
+  if (wasOffline && connected) {
+    context.read<DashboardBloc>().add(
+      const DashboardLoadRequested(),
+    );
   }
-
+}
   Future<void> _loadLeaveBalance(String employeeId) async {
     setState(() {
       isLeaveBalanceLoading = true;
@@ -152,6 +196,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                       _buildOfflineBanner(),
+
                       _buildEmployeeHeader(
                         employee.name,
                         employee.id,
@@ -280,7 +326,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   )
                 else
                   Text(
-                    '${leaveBalance ?? 0} Days',
+                    '$leaveBalance Days',
                     style: const TextStyle(
                       color: DashboardPage.navy,
                       fontSize: 23,
@@ -959,51 +1005,140 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildError(BuildContext context, String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.cloud_off_rounded,
-              size: 48,
+Widget _buildError(BuildContext context, String message) {
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF2FF),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.wifi_off_rounded,
+              size: 42,
+              color: DashboardPage.indigo,
+            ),
+          ),
+
+          const SizedBox(height: 22),
+
+          const Text(
+            'Unable to load data',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: DashboardPage.navy,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+           Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
               color: DashboardPage.secondaryText,
             ),
-            const SizedBox(height: 15),
-            const Text(
-              'Unable to load dashboard',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: DashboardPage.navy,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: DashboardPage.secondaryText),
-            ),
-            const SizedBox(height: 18),
-            ElevatedButton(
+          ),
+
+          const SizedBox(height: 24),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
               onPressed: () {
                 context.read<DashboardBloc>().add(
                   const DashboardLoadRequested(),
                 );
               },
-              child: const Text('Try Again'),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DashboardPage.indigo,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
-
+    ),
+  );
+}
   String _formatTime(DateTime? date) {
     if (date == null) return '--:--';
 
     return DateFormat('hh:mm a').format(date.toLocal());
   }
+
+  Widget _buildOfflineBanner() {
+  if (!isOffline) {
+    return const SizedBox.shrink();
+  }
+
+  return Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 18),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF7ED),
+      borderRadius: BorderRadius.circular(13),
+      border: Border.all(
+        color: const Color(0xFFFED7AA),
+      ),
+    ),
+    child: const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.wifi_off_rounded,
+          color: Color(0xFFC2410C),
+          size: 21,
+        ),
+        SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "You're currently offline",
+                style: TextStyle(
+                  color: Color(0xFF9A3412),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Showing saved information. Attendance '
+                'will sync when connectivity returns.',
+                style: TextStyle(
+                  color: Color(0xFF9A3412),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  @override
+void dispose() {
+  _connectivitySubscription?.cancel();
+  super.dispose();
+}
 }

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/repositories/dashboard_repository.dart';
@@ -35,8 +36,35 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           attendanceSummary: attendanceSummary,
         ),
       );
+    } on DioException catch (e) {
+      String message;
+
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.connectionError:
+          message =
+              'Unable to connect to the server. Please check your internet connection and try again.';
+          break;
+
+        case DioExceptionType.badResponse:
+          message =
+              'The server is currently unavailable. Please try again later.';
+          break;
+
+        default:
+          message =
+              'Something went wrong while loading your employee details. Please try again.';
+      }
+
+      emit(DashboardError(message));
     } catch (e) {
-      emit(DashboardError(e.toString()));
+      emit(
+        const DashboardError(
+          'Unable to load your employee details. Please try again.',
+        ),
+      );
     }
   }
 }
