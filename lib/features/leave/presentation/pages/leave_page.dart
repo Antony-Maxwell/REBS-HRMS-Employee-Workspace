@@ -329,9 +329,9 @@ class _LeaveViewState extends State<_LeaveView> {
               const Spacer(),
               if (state.isLoading)
                 const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: SpinKitThreeBounce(color: Color(0xFF6366F1), size: 30),
+                  width: 30,
+                  height: 30,
+                  child: SpinKitThreeBounce(color: Color(0xFF6366F1), size: 20),
                 ),
             ],
           ),
@@ -523,11 +523,11 @@ class _LeaveViewState extends State<_LeaveView> {
                 onPressed: state.isSubmitting ? null : () => _submit(state),
                 icon: state.isSubmitting
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: const SpinKitThreeBounce(
+                        width: 30,
+                        height: 30,
+                        child: SpinKitThreeBounce(
                           color: Color(0xFF6366F1),
-                          size: 30,
+                          size: 20,
                         ),
                       )
                     : const Icon(Icons.send_rounded),
@@ -557,12 +557,16 @@ class _LeaveViewState extends State<_LeaveView> {
 
   Widget _buildLeaveHistory(LeaveState state) {
     if (state.requests.isEmpty && state.isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: SpinKitThreeBounce(color: Color(0xFF6366F1), size: 30),
+      return const SizedBox(
+      width: double.infinity,
+      height: 100,
+      child: Center(
+        child: SpinKitThreeBounce(
+          color: Color(0xFF6366F1),
+          size: 22,
         ),
-      );
+      ),
+    );
     }
 
     if (state.requests.isEmpty) {

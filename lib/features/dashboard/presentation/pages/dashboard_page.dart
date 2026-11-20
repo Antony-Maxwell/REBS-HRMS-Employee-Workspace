@@ -168,9 +168,11 @@ void _updateConnectivity(List<ConnectivityResult> results) {
         child: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, state) {
             if (state is DashboardLoading) {
-              return const SpinKitThreeBounce(
-                color: Color(0xFF6366F1),
-                size: 30,
+              return Center(
+                child: const SpinKitThreeBounce(
+                  color: Color(0xFF6366F1),
+                  size: 30,
+                ),
               );
             }
 
@@ -312,11 +314,11 @@ void _updateConnectivity(List<ConnectivityResult> results) {
                 const SizedBox(height: 5),
                 if (isLeaveBalanceLoading)
                   const SizedBox(
-                    height: 22,
-                    width: 22,
+                    height: 30,
+                    width: 30,
                     child: SpinKitThreeBounce(
                       color: Color(0xFF6366F1),
-                      size: 30,
+                      size: 20,
                     ),
                   )
                 else if (leaveBalanceError != null)
